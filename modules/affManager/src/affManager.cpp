@@ -126,7 +126,7 @@ Windows, Linux
 
 \author Tanis Mar
 */ 
-
+#include <yarp/os/LogStream.h>
 
 #include "affManager.h"
 
@@ -316,12 +316,14 @@ bool AffManager::attach(yarp::os::RpcServer &source)
 /* Atomic commands */
 // Setting up commands
 bool AffManager::start(){
-	std::cout << "Starting!" << std::endl;
+    yInfo() << "Starting!";
+	// std::cout << "Starting!" << std::endl;
 	running = true;
 	return true;
 }
 bool AffManager::quit(){
-	std::cout << "Quitting!" << std::endl; 
+    yInfo() << "Quitting!";
+	// std::cout << "Quitting!" << std::endl; 
 	running = false;
 	return true;
 }
@@ -377,9 +379,9 @@ bool AffManager::getTool(const int toolI, const int deg){
 
     }else {
         askForTool();
-        std::cout << "Give the tool to the iCub oriented " <<  deg << "!" << std::endl;
+        yInfo() << "Give the tool to the iCub oriented " <<  deg << "!";
         if (!graspTool()){
-            std::cout << "Tool could not be grasped properly, stopping!" << std::endl;
+            yError() << "Tool could not be grasped properly, stopping!";
             return false;
         }
         // Find tool dimensions using KARMA
@@ -489,7 +491,7 @@ bool AffManager::predictDo(const int toolI, const int pose){
 	 bOut.addInt(toolI);
 	 bOut.addInt(pose);
 
-	 cout << "writing out " << bOut.toString().c_str() << endl;
+	 yInfo() << "writing out " << bOut.toString().c_str();
 	 outDataPort.write(bOut);
 
 
@@ -499,7 +501,7 @@ bool AffManager::predictDo(const int toolI, const int pose){
      Bottle& bPredEff = bOut.addList();
 	 bPredEff.addDouble(bestEff);
 
-	 cout << "writing out " << bOut.toString().c_str() << endl;
+	 yInfo() << "writing out " << bOut.toString().c_str();
 	 outDataPort.write(bOut);
 
 	 return doAction(bestApproach);
@@ -733,7 +735,7 @@ void AffManager::findToolDimsExe()
     toolDim[0] = toolDimB.get(0).asDouble();
     toolDim[1] = toolDimB.get(1).asDouble();
     toolDim[2] = toolDimB.get(2).asDouble();    
-    cout << "Tool dims are" << toolDim.toString().c_str() << endl;
+    yInfo() << "Tool dims are" << toolDim.toString().c_str();
   /*  
     printf ("measure the tool coordinates from the robot frame and input them as X Y Z");
     Bottle *toolDimB = userDataPort.read(true);
@@ -784,7 +786,7 @@ bool AffManager::lookAtToolExe()
     tipOnView = false;
     double disp = 0;
     while (!tipOnView){
-        cout << "Tooltip not on view, looking for it" << endl;
+        yWarning() << "Tooltip not on view, looking for it";
         handToCenter();
         //fprintf(stdout,"Moving hand to the center:\n");
 
@@ -794,7 +796,7 @@ bool AffManager::lookAtToolExe()
         tipOnView = gazeAtTool();        
         disp += 0.02;
     }
-    cout << "Tooltip now on view" << endl;
+    yInfo() << "Tooltip now on view";
 	igaze->setTrackingMode(true);
     return true;
 }
@@ -861,10 +863,10 @@ bool AffManager::gazeAtTool()
     toolTipPix[1] = toolTipB.get(1).asInt();
 
     if ((toolTipPix[0]<0) || (toolTipPix[0]>320) ||(toolTipPix[1]<0) ||(toolTipPix[0]>240)){
-        cout <<"Tooltip out of sight, at pixel: " << toolTipB.toString().c_str() << endl;
+        yError() <<"Tooltip out of sight, at pixel: " << toolTipB.toString().c_str();
         return false;
     }
-    cout <<" Tooltip within view, at pixel: " << toolTipB.toString().c_str() << endl;	
+    yInfo() <<" Tooltip within view, at pixel: " << toolTipB.toString().c_str();	
 	return true;
 }
 
@@ -882,7 +884,7 @@ void AffManager::observeToolExe(){
      * call fExt snapshot to get the image
     */
     if (!gazeAtTool()){
-    	cout << "Tool not on sight, cant observe it, trying to look at it again" << endl;
+    	yError() << "Tool not on sight, cant observe it, trying to look at it again";
     	lookAtToolExe();
     	observeToolExe();
     }
@@ -895,7 +897,7 @@ void AffManager::observeToolExe(){
 			Bottle *toolTipIn = userDataPort.read(true);
 			toolTipPix[0] = toolTipIn->get(0).asInt();
 			toolTipPix[1] = toolTipIn->get(1).asInt();
-			cout <<" Tooltip within view, at pixel: " << toolTipPix.toString().c_str() << endl;
+			yInfo() <<" Tooltip within view, at pixel: " << toolTipPix.toString().c_str();
         }
 
 
@@ -1043,7 +1045,7 @@ bool AffManager::locateObj()
         coords3D(2) = replyFinder.get(1).asList()->get(2).asDouble();
         printf("Point in 3D retrieved: %g, %g %g\n", coords3D(0), coords3D(1), coords3D(2));
     } else {
-		cout << "No 3D point received" << endl;
+		yError() << "No 3D point received";
         return false;
 	}
 
