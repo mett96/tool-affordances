@@ -232,7 +232,7 @@ protected:
         switch (cmd)
         {
             //-----------------
-            case VOCAB4('p','u','s','h'):
+            case createVocab('p','u','s','h'):
             {
                 Bottle payload=command.tail();
                 if (payload.size()>=5)
@@ -262,8 +262,8 @@ protected:
             }
 
             //-----------------
-            case VOCAB4('v','d','r','g'):
-            case VOCAB4('d','r','a','g'):
+            case createVocab('v','d','r','g'):
+            case createVocab('d','r','a','g'):
             {
                 Bottle payload=command.tail();
                 if (payload.size()>=5)
@@ -280,7 +280,7 @@ protected:
                     radius=payload.get(4).asDouble();
                     handTilt=payload.get(5).asDouble();
 
-                    double collision = drag(cmd==VOCAB4('v','d','r','g'), c, theta, radius, handTilt, pushHand, toolFrame);
+                    double collision = drag(cmd==createVocab('v','d','r','g'), c, theta, radius, handTilt, pushHand, toolFrame);
                     if (collision < collisionThresh){
                         reply.addVocab(ack);
                         reply.addDouble(radius);
@@ -293,7 +293,7 @@ protected:
                     }
 
 
-                    if (cmd==VOCAB4('v','d','r','g'))
+                    if (cmd==createVocab('v','d','r','g'))
                         reply.addDouble(collision);
                 }else {
 
@@ -305,8 +305,8 @@ protected:
             }
 
             //-----------------
-            case VOCAB4('s','l','i','d'):
-            case VOCAB4('v','s','l','i'):
+            case createVocab('s','l','i','d'):
+            case createVocab('v','s','l','i'):
             {
                 Bottle payload=command.tail();
                 if (payload.size()>=5)
@@ -321,7 +321,7 @@ protected:
                     theta=payload.get(3).asDouble();
                     radius=payload.get(4).asDouble();
 
-                    double collision = slide(cmd==VOCAB4('v','s','l','i'), c, theta, radius, pushHand, toolFrame);
+                    double collision = slide(cmd==createVocab('v','s','l','i'), c, theta, radius, pushHand, toolFrame);
                     if (collision < collisionThresh){
                         reply.addVocab(ack);
                         reply.addDouble(radius);
@@ -333,7 +333,7 @@ protected:
                         reply.addDouble(collision);
                     }
 
-                    if (cmd==VOCAB4('v','s','l','i'))
+                    if (cmd==createVocab('v','s','l','i'))
                         reply.addDouble(collision);
                 }else {
 
@@ -345,10 +345,10 @@ protected:
             }
 
             //-----------------
-            case VOCAB4('p','u','l','l'):   //Call the action as 'pull'
-            case VOCAB4('v','p','u','l'):
-            case VOCAB4('d','r','a','w'):   // or 'draw'
-            case VOCAB4('v','d','r','a'):
+            case createVocab('p','u','l','l'):   //Call the action as 'pull'
+            case createVocab('v','p','u','l'):
+            case createVocab('d','r','a','w'):   // or 'draw'
+            case createVocab('v','d','r','a'):
             {
                 Bottle payload=command.tail();
                 if (payload.size()>=6)
@@ -365,7 +365,7 @@ protected:
                     radius=payload.get(4).asDouble();
                     dist=payload.get(5).asDouble();
 
-                    double collision = pull(cmd==VOCAB4('v','d','r','a'), c, theta, radius, dist, pushHand, toolFrame);
+                    double collision = pull(cmd==createVocab('v','d','r','a'), c, theta, radius, dist, pushHand, toolFrame);
 
                     if (collision < collisionThresh){
                         reply.addVocab(ack);
@@ -378,7 +378,7 @@ protected:
                         reply.addDouble(collision);
                     }
 
-                    if (cmd==VOCAB4('v','d','r','a'))
+                    if (cmd==createVocab('v','d','r','a'))
                         reply.addDouble(collision);
                 } else {
 
@@ -390,7 +390,7 @@ protected:
             }
 
             //-----------------
-            case VOCAB4('f','i','n','d'):
+            case createVocab('f','i','n','d'):
             {
                 Bottle payload=command.tail();
                 if (payload.size()>=2)
@@ -412,7 +412,7 @@ protected:
             }
 
             //-----------------
-            case VOCAB4('c','o','l','T'):
+            case createVocab('c','o','l','T'):
             {
                 Bottle payload=command.tail();
                 
@@ -428,7 +428,7 @@ protected:
             }
 
             //-----------------
-            case VOCAB4('t','o','o','l'):
+            case createVocab('t','o','o','l'):
             {
                 if (command.size()>1)
                 {
@@ -482,7 +482,7 @@ protected:
                 break;
             }
 
-            case VOCAB4('h','e','l','p'):
+            case createVocab('h','e','l','p'):
             {
                 reply.addVocab(Vocab::encode("many"));
                 reply.addString("Available commands are:");
@@ -1426,7 +1426,7 @@ protected:
         }
 
         // execute the movements
-        cout << "Starting slide Execution" << endl;
+        yInfo() << "Starting slide Execution";
         Vector offs(3,0.0); offs[2]=0.06;
         radius = rad;
 
@@ -1531,7 +1531,7 @@ protected:
         iGaze->setEyesTrajTime(1.5);
 
         // put the shaking joint in velocity mode
-        IControlMode2 *imode;
+        IControlMode *imode;
         if (arm=="left")
             driverHL.view(imode);
         else
