@@ -86,8 +86,10 @@ Windows, Linux
 #include <yarp/sig/Vector.h>
 #include <yarp/sig/Image.h>
 #include <yarp/os/Vocab.h>
+#include <yarp/cv/Cv.h>
 
-#include <cv.h>
+#include <opencv2/opencv.hpp>
+#include <opencv2/core/core_c.h>
 
 #include <yarp/dev/PolyDriver.h>
 #include <yarp/dev/GazeControl.h>
@@ -325,7 +327,8 @@ public:
         // Crops the image based on user input and creates a template for the tracker with it.
         printf("Reading image!!\n");
         ImageOf<PixelRgb> *imgIn = imInPort.read();  // read an image
-        cv::Mat img = cv::cvarrToMat( imgIn->getIplImage());
+        cv::Mat img = yarp::cv::toCvMat(*imgIn);
+        // cv::Mat img = cv::cvarrToMat( imgIn->getIplImage());
      
         printf("Click first top left and then bottom right from the object !!\n");
         bool boxOK = false;
@@ -355,7 +358,8 @@ public:
         printf("Prep out mat !!\n");
         ImageOf<PixelRgb> &templateOut  = tempOutPort.prepare();
         templateOut.resize(BBox.width, BBox.height);
-        cv::Mat tempOut = cv::cvarrToMat(templateOut.getIplImage(),false);
+        cv::Mat tempOut = yarp::cv::toCvMat(templateOut);
+        // cv::Mat tempOut = cv::cvarrToMat(templateOut.getIplImage(),false);
         img(BBox).copyTo(tempOut);
         //cv::GaussianBlur(img(BBox), imOut, cv::Size(1,1), 1, 1);
 
