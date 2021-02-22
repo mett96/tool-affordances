@@ -36,7 +36,7 @@ bool  AffCollector::configure(ResourceFinder &rf)
     rf.setDefaultContext("AffordancesProject");
 
     string contextPath = "/share/ICUBcontrib/contexts/AffordancesProject/";
-    string icubContribEnvPath = yarp::os::getenv("ICUBcontrib_DIR");
+    string icubContribEnvPath = std::getenv("ICUBcontrib_DIR");
     filepath  = icubContribEnvPath + contextPath;
 
     verb = rf.check("verbose",Value(true)).asBool();
