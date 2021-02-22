@@ -1,3 +1,4 @@
+#include <yarp/os/LogStream.h>
 
 #include "graspChecker.h"
 
@@ -14,7 +15,7 @@ using namespace yarp::sig;
 /*******************************************************************************/
 bool GraspCheckModule::trainObserve(const string &label, BoundingBox &bb)
 {
-    cout<< " Training image with label " << label << endl;
+    yInfo()<< " Training image with label " << label;
     ImageOf<PixelRgb> img= *portImgIn.read(true);
 
     portImgOut.write(img);
@@ -103,7 +104,7 @@ bool GraspCheckModule::classifyObserve(string &label, BoundingBox &bb)
 /**********************************************************/
 string GraspCheckModule::processScores(const Bottle &scores)
 {
-    cout << " Processing the scores" << endl;
+    yInfo() << " Processing the scores";
     double maxScoreObj=0.0;
     string label  ="";
 
@@ -218,12 +219,12 @@ bool GraspCheckModule::attach(yarp::os::RpcServer &source)
 /* Atomic commands */
 // Setting up commands
 bool GraspCheckModule::start(){
-    std::cout << "Starting!" << std::endl;
+    yInfo() << "Starting!";
     running = true;
     return true;
 }
 bool GraspCheckModule::quit(){
-    std::cout << "Quitting!" << std::endl;
+    yInfo() << "Quitting!";
     running = false;
     return true;
 }
@@ -250,11 +251,11 @@ bool GraspCheckModule::check(const double tlx ,const double tly, const double br
     bb.brx = brx;
     bb.bry = bry;
 
-    cout << "Classifying image from crop " << tlx <<", "<< tly <<", "<< brx <<", "<< bry <<". "<<endl;
+    yInfo() << "Classifying image from crop " << tlx <<", "<< tly <<", "<< brx <<", "<< bry <<". ";
 
     classifyObserve(label, bb);
 
-    cout<< " classifyObserve returned "<< label << endl;
+    yInfo()<< " classifyObserve returned "<< label;
 
     bool answer;
     if (strcmp (label.c_str(),"full") == 0)
