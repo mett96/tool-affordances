@@ -2,12 +2,14 @@
 # Author: ---
 # CopyPolicy: Released under the terms of the GNU GPL v2.0.
 
-cmake_minimum_required(VERSION 2.6)
-project(AffordancesProject)
+# cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 3.12)
 
-find_package(YARP)
-find_package(ICUB)
-find_package(ICUBcontrib)
+project(AffordancesProject VERSION 1.1)
+
+find_package(YARP 3.3.0 REQUIRED)
+find_package(ICUB REQUIRED)
+find_package(ICUBcontrib REQUIRED)
 list(APPEND CMAKE_MODULE_PATH ${YARP_MODULE_PATH})
 list(APPEND CMAKE_MODULE_PATH ${ICUB_MODULE_PATH})
 list(APPEND CMAKE_MODULE_PATH ${ICUBCONTRIB_MODULE_PATH})
