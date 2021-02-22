@@ -15,6 +15,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
  * Public License for more details
 */
+#include <yarp/os/LogStream.h>
 
 #include "tool3DManager.h"
 
@@ -40,13 +41,13 @@ bool Tool3DManager::configure(ResourceFinder &rf)
     hand = rf.check("hand",Value("right")).asString().c_str();
     robot = rf.check("robot",Value("icub")).asString().c_str();
 
-    cout << "Configuring module name " << name << ", camera " << camera << ", hand "<< hand << ", on robot " << robot << endl;
+    yInfo() << "Configuring module name " << name << ", camera " << camera << ", hand "<< hand << ", on robot " << robot;
 
     if (robot=="icubSim"){
-        cout << "Configuring for robot icubSim" << endl;
+        yInfo() << "Configuring for robot icubSim";
         tableHeight = rf.check("tableHeight", Value(-0.13)).asDouble();      // Height of the table in the robots coord frame
     }else{
-        cout << "Configuring for robot real iCub" << endl;
+        yInfo() << "Configuring for robot real iCub";
         tableHeight = rf.check("tableHeight", Value(-0.13)).asDouble();      // Height of the table in the robots coord frame
     }
     
@@ -58,7 +59,7 @@ bool Tool3DManager::configure(ResourceFinder &rf)
     Bottle temp;
     string modelName = "obj";
 
-    cout << "Loading models to buffer" << endl;
+    yInfo() << "Loading models to buffer";
     bool noMoreModels = false;
     int n =0;
     while (!noMoreModels){      // read until there are no more objects.
@@ -69,12 +70,12 @@ bool Tool3DManager::configure(ResourceFinder &rf)
         temp = rf.findGroup("objects").findGroup(objNameNum);
 
         if(!temp.isNull()) {
-            cout << "model " << n << ", id: " << objNameNum;            
+            yInfo() << "model " << n << ", id: " << objNameNum;            
             string modelx = temp.get(2).asString();         // retrieve model name with format
             string::size_type idx;                          // remove format (.x) to save only tool name
             idx = modelx.rfind('.');                        // ..
             string model = modelx.substr(0,idx);            // format removed.
-            cout << ", model: " << model << endl;
+            yInfo() << ", model: " << model;
 
             models.push_back(model);
             temp.clear();
@@ -84,7 +85,7 @@ bool Tool3DManager::configure(ResourceFinder &rf)
         }
     }
     int numberObjs = n;
-    cout << "Loaded " << numberObjs << " objects. " << endl;
+    yInfo() << "Loaded " << numberObjs << " objects. ";
 
 
     // Module flow parameters
@@ -211,13 +212,13 @@ bool Tool3DManager::attach(yarp::os::RpcServer &source)
 }
 
 bool Tool3DManager::start(){
-    cout << "Starting!" << endl;
+    yInfo() << "Starting!";
 	running = true;
 	return true;
 }
 
 bool Tool3DManager::quit(){
-    cout << "Quitting!" << endl;
+    yInfo() << "Quitting!";
 	running = false;
 	return true;
 }
@@ -233,7 +234,7 @@ bool Tool3DManager::loadModel(const string &tool){
 string Tool3DManager::graspTool(const string &tool){    
     string tool_loaded;
     if (robot=="icubSim"){
-        cout << "Tool in sim is loaded, not grasped." << endl;
+        yWarning() << "Tool in sim is loaded, not grasped.";
         tool_loaded = "not_loaded";
     }else{
         tool_loaded = graspToolExe(tool);
@@ -244,10 +245,10 @@ string Tool3DManager::graspTool(const string &tool){
 bool Tool3DManager::getToolParam(const string &tool, double deg, double disp, double tilt, double shift){
     bool ok;
     if (robot=="icubSim"){
-        cout << "Loading tool " << tool << " in simulation" << endl;
+        yInfo() << "Loading tool " << tool << " in simulation";
         ok = getToolSimExe(tool, deg, disp, tilt);
     }else{
-        cout << "Getting tool " << tool << " in real robot, finding pose by param." << endl;
+        yInfo() << "Getting tool " << tool << " in real robot, finding pose by param.";
         ok = getToolParamExe(tool, deg, disp, tilt, shift);
     }
     return ok;
@@ -256,7 +257,7 @@ bool Tool3DManager::getToolParam(const string &tool, double deg, double disp, do
 bool Tool3DManager::getToolAlign(const string &tool){
     bool ok;
     if (robot=="icubSim"){
-         cout << "Grasp params need to be given to grasp on simulator. Try getToolByPose." << endl;
+        yError() << "Grasp params need to be given to grasp on simulator. Try getToolByPose.";
     }else{
         ok = getToolAlignExe(tool);
     }
@@ -268,14 +269,14 @@ bool Tool3DManager::explore(const string &tool, const string &exp_mode){
     bool ok;
     ok = exploreTool(tool, exp_mode, tooltip);
 
-    cout <<  "Tool loaded and pose and tooltip found at (" <<tooltip.x <<", " << tooltip.y << "," <<tooltip.z <<  ") !" << endl;
+    yInfo() <<  "Tool loaded and pose and tooltip found at (" <<tooltip.x <<", " << tooltip.y << "," <<tooltip.z <<  ") !";
 
     ok = addToolTip(tooltip);
     if (!ok){
-        cout << "Tool tip could not be attached." << endl;
+        yError() << "Tool tip could not be attached.";
         return false;
     }
-    cout <<  "Tooltip attached, ready to perform action!" << endl;
+    yInfo() <<  "Tooltip attached, ready to perform action!";
     return ok;
 }
 
@@ -288,7 +289,7 @@ bool Tool3DManager::lookTool(){
 bool Tool3DManager::regrasp(double deg, double disp, double tilt, double shift){
     bool ok;
     if (toolname == ""){
-        cout << "A tool has to be loaded before regrasping is possible" << endl;
+        yError() << "A tool has to be loaded before regrasping is possible";
         return false;
     }
 
@@ -299,25 +300,25 @@ bool Tool3DManager::regrasp(double deg, double disp, double tilt, double shift){
 bool Tool3DManager::findPose(){
 
     if (robot=="icubSim"){
-        cout << "Grasp in sim corresponds surely with given one." << endl;
+        yError() << "Grasp in sim corresponds surely with given one.";
         return false;
     }
     bool ok;
     double ori, displ, tilt;
     ok = findPoseAlignExe(tooltip, ori, displ, tilt);
     if (!ok){
-        cout << "Tool Pose could not be estimated properly" << endl;
+        yError() << "Tool Pose could not be estimated properly";
         return false;
     }
-    cout <<  "Tool  grasped with orientation: " << ori <<", displ: " << displ << " and tilt " << tilt <<  endl;
-    cout <<  "Tooltip found at (" <<tooltip.x <<", " << tooltip.y << "," <<tooltip.z <<  ") !" << endl;
+    yInfo() <<  "Tool  grasped with orientation: " << ori <<", displ: " << displ << " and tilt " << tilt;
+    yInfo() <<  "Tooltip found at (" <<tooltip.x <<", " << tooltip.y << "," <<tooltip.z <<  ") !";
 
     ok = addToolTip(tooltip);
     if (!ok){
-        cout << "Tool tip could not be attached." << endl;
+        yError() << "Tool tip could not be attached.";
         return false;
     }
-    cout <<  "Tooltip attached, ready to perform action!" << endl;
+    yInfo() <<  "Tooltip attached, ready to perform action!";
 
 
     return true;
@@ -330,7 +331,7 @@ bool Tool3DManager::getToolFeats(){
 
 bool Tool3DManager::learn(const std::string &label)
 {
-    cout << " Received 'learn' " << label << endl;
+    yInfo() << " Received 'learn' " << label;
     return trainGraspClas(label);
 }
 
@@ -353,7 +354,7 @@ bool Tool3DManager::findTable(bool calib){
 
     double th = findTableHeight(calib);
     tableHeight = th;
-    cout << "Setting table height to " << th << endl;
+    yInfo() << "Setting table height to " << th;
     return true;
 }
 
@@ -423,7 +424,7 @@ bool Tool3DManager::runRandPoses(int numPoses,int numAct){
         double  graspDisp = randG.scalar(-3,3);
         double  graspTilt = randG.scalar(0,45);
 
-        cout << "Starting trial with orientation "<< graspOr <<", displacement "<<  graspDisp << " and tilt " << graspTilt << "." << endl;
+        yInfo() << "Starting trial with orientation "<< graspOr <<", displacement "<<  graspDisp << " and tilt " << graspTilt << ".";
 
         string tool = models[toolI];
         getToolParam(tool, graspOr, graspDisp, graspTilt);  // re-grasp the tool with the given grasp parameters
@@ -455,7 +456,7 @@ bool Tool3DManager::runToolPose(int numRep,  int numAct){
         for (int i=1 ; i<=numAct ; i++){
             dragExe(theta, 0.15, tilt);
             computeEffect();
-            cout << "Going to next action" <<endl;
+            yInfo() << "Going to next action";
             theta += thetaDiv;
         }
         theta = 0.0;
@@ -471,12 +472,12 @@ bool Tool3DManager::runToolTrial(int numRep, const string &tool,  int numAct){
     // x 8 thetas (every 45 degrees).
     for ( int ori = -90; ori < 100; ori = ori + 90){            // This is a loop for {-90, 0, 90}
 
-        cout << "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"<< endl;
+        yInfo() << "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++";
         // Get tool
         if (robot == "icubSim"){
             getToolSimExe(tool,ori);
         }else{
-            cout << "Hand me the tool: " << tool << " at orientation "<< ori << "."<< endl;
+            yInfo() << "Hand me the tool: " << tool << " at orientation "<< ori << ".";
             getToolAlignExe(tool);
         }
 
@@ -508,18 +509,18 @@ bool Tool3DManager::selectAction(int goal)
     // A tool has to have been handled in the first place -> so the model is already loaded    
     // Extract features to send them to MATLAB.
     if (!extractFeats()){
-        cout << "ToolFeatExt coudln't extract the features." << endl;
+        yError() << "ToolFeatExt coudln't extract the features.";
         return false;
     }
-    cout << " Oriented 3D features extracted and sent to Matlab" << endl;
+    yInfo() << " Oriented 3D features extracted and sent to Matlab";
 
     Bottle *matReply = matlabPort.read(true);
-    cout << " Read Bottle from Matlab of length " << matReply->size() << endl;
-    cout << " Read prediction form Matlab " << matReply->toString().c_str() << endl;
+    yInfo() << " Read Bottle from Matlab of length " << matReply->size();
+    yInfo() << " Read prediction form Matlab " << matReply->toString().c_str();
 
     // Find the maximum for affPred and perform doAction on the max index.
     //Bottle *effPred = matReply->get(0).asList();
-    //cout << ", Predicted Effect Vector " << effPred->toString().c_str() << endl;
+    //yInfo() << ", Predicted Effect Vector " << effPred->toString().c_str();
 
     if (goal == 1) // Goal is to achieve maximum displacement
     {
@@ -548,14 +549,14 @@ bool Tool3DManager::selectAction(int goal)
         double predEff = matReply->get(pullI).asDouble();
         if (predEff < 0.05) // If the expected pull is smaller than 5 cm means teh tool can't afford pulling{
         {
-            cout << "Please give me another tool, I can't pull with this tool" << endl;
+            yError() << "Please give me another tool, I can't pull with this tool";
             return false;
         }
-        cout << "I can pull with this tool, expected drag is "<< predEff << endl;
+        yInfo() << "I can pull with this tool, expected drag is "<< predEff;
         dragExe(270, 0.15, tilt);
         return computeEffect();
     }else{
-        cout << "Please select a goal (1:Max disp, 2: pull)" <<endl;
+        yInfo() << "Please select a goal (1:Max disp, 2: pull)";
         return false;
     }
 }
@@ -569,14 +570,14 @@ bool Tool3DManager::predExp(int toolini, int goal)
         for (int testToolI = toolini; testToolI < numTools_test; testToolI++ ){
             for ( int ori = -90; ori < 100; ori = ori + 90){            // This is a loop for {-90, 0, 90}            
                 string& tool = models[testToolI];       // Because tools are 1 indexed on the file, but 0 on sim
-                cout << "Attempting to load " << tool << endl;
+                yInfo() << "Attempting to load " << tool;
                 if (getToolParam(tool, ori)){
-                    cout << "Tool loaded, selecting best action for goal " << goal << endl;
+                    yInfo() << "Tool loaded, selecting best action for goal " << goal;
                     for (int i = 1; i<3;i++){                                // this is just repetitions.
                         selectAction(goal);
                     }
                 }else{
-                    cout << "Couldn't load the desired test tool" << endl;
+                    yError() << "Couldn't load the desired test tool";
                     return false;
                 }
 
@@ -605,11 +606,11 @@ bool Tool3DManager::setSeg(bool seg){
     }else{
         cmd3DE.addString("OFF");
     }
-    cout << "Sending RPC command to toolIncorporator: " << cmd3DE.toString() << "."<< endl;
+    yInfo() << "Sending RPC command to toolIncorporator: " << cmd3DE.toString() << ".";
     rpc3Dexp.write(cmd3DE, reply3DE);
-    cout << "RPC reply from toolIncorporator: " << reply3DE.toString() << "."<< endl;
+    yInfo() << "RPC reply from toolIncorporator: " << reply3DE.toString() << ".";
     if (reply3DE.get(0).asString() != "[ack]" ){
-        cout << "toolIncorporator couldnt set segmentatio to ON/OFF" << endl;
+        yError() << "toolIncorporator couldnt set segmentatio to ON/OFF";
         return false;
     }
 
@@ -636,16 +637,16 @@ bool Tool3DManager::load3Dmodel(const string &cloudName)
     cmd3DE.clear();   reply3DE.clear();
     cmd3DE.addString("loadCloud");
     cmd3DE.addString(cloudName);
-    cout << "Sending RPC command to toolIncorporator: " << cmd3DE.toString() << "."<< endl;
+    yInfo() << "Sending RPC command to toolIncorporator: " << cmd3DE.toString() << ".";
     rpc3Dexp.write(cmd3DE, reply3DE);
 
     if (reply3DE.get(0).asString() == "[ack]" ){
         toolname = cloudName;
-        cout << "Cloud " << cloudName << " loaded" << endl;
+        yInfo() << "Cloud " << cloudName << " loaded";
         return true;
     }else {
-        cout << "toolIncorporator coudln't load the tool." << endl;
-        cout << "Check the spelling of the name, or, if the tool has no known model, try 'explore (tool)'." << endl;
+        yError() << "toolIncorporator coudln't load the tool.";
+        yError() << "Check the spelling of the name, or, if the tool has no known model, try 'explore (tool)'.";
         return false;
     }
 }
@@ -701,17 +702,17 @@ string Tool3DManager::graspToolExe(const std::string &tool)
         cmd3DE.addString("recog");
         rpc3Dexp.write(cmd3DE, reply3DE);
 
-        cout << "Reply from Classifier: " << reply3DE.toString() << endl;
+        yInfo() << "Reply from Classifier: " << reply3DE.toString();
         if (reply3DE.get(0).asString() != "[ack]" ){
-            cout << "Couldn't recognize the tool." << endl;
+            yError() << "Couldn't recognize the tool.";
             return "not_loaded";
         }
         tool_name = reply3DE.get(1).asString();
-        cout << "Tool recognized as " << tool_name << endl;
+        yInfo() << "Tool recognized as " << tool_name;
     }
 
     if (!load3Dmodel(tool_name)){
-        cout << "Coudln't load the tool." << endl;
+        yError() << "Coudln't load the tool.";
         return "not_loaded" ;
     }
 
@@ -728,11 +729,11 @@ bool Tool3DManager::lookToolExe()
     Bottle cmd3DE,reply3DE;                 // bottles for toolFeatExt
     cmd3DE.clear();   reply3DE.clear();
     cmd3DE.addString("lookAtTool");
-    cout << "Sending RPC command to toolIncorporator: " << cmd3DE.toString() << "."<< endl;
+    yInfo() << "Sending RPC command to toolIncorporator: " << cmd3DE.toString() << ".";
     rpc3Dexp.write(cmd3DE, reply3DE);
 
     if (reply3DE.get(0).asString() != "[ack]" ){
-        cout << "toolIncorporator coudln't look at tool." << endl;
+        yError() << "toolIncorporator coudln't look at tool.";
         return false;
     }
 
@@ -745,10 +746,10 @@ bool Tool3DManager::getToolSimExe(const string &tool, const double graspOr,const
 {    
 
     int toolI = findToolInd(tool);
-    if (toolI < 0){     cout << "Tool label not found" << endl;        return false;}
-    cout << endl<< "Grasping tool " << tool << " with index " << toolI << endl;
+    if (toolI < 0){     yError() << "Tool label not found";        return false;}
+    yInfo()<< "Grasping tool " << tool << " with index " << toolI;
 
-    cout << "Tool present: " << toolname <<"."<< endl;
+    yInfo() << "Tool present: " << toolname <<".";
 
     Bottle cmdAMM,replyAMM;               // bottles for the Affordance Motor Module
     Bottle cmdSim,replySim;               // bottles for Simulator
@@ -761,7 +762,7 @@ bool Tool3DManager::getToolSimExe(const string &tool, const double graspOr,const
     rpcAffMotor.write(cmdAMM, replyAMM);
 
     // Move hand to center to receive tool on correct position - implemented by faking a push action to the center to avoid iCart dependencies.
-    cout << "Moving "<< hand << " arm to a central position" << endl;
+    yInfo() << "Moving "<< hand << " arm to a central position";
     double dispY = (hand=="right")?0.15:-0.15;
     cmdAMM.clear();replyAMM.clear();
     cmdAMM.addString("push");            // Set a position in the center in front of the robot
@@ -775,7 +776,7 @@ bool Tool3DManager::getToolSimExe(const string &tool, const double graspOr,const
     double tiltValid = graspTilt;
     if (graspTilt > 90.0) {   tiltValid  = 90.0; }
     if (graspTilt < 0.0)  {   tiltValid  = 0.0; }
-    cout << endl<<"Getting tool " << toolI <<" with orientation: "<< graspOr << ", displacement: " << graspDisp << "and tilt: " << tiltValid << endl;
+    yInfo()<<"Getting tool " << toolI <<" with orientation: "<< graspOr << ", displacement: " << graspDisp << "and tilt: " << tiltValid;
 
 
     if (tool != toolname)   // A new tool is being loaded
@@ -794,19 +795,19 @@ bool Tool3DManager::getToolSimExe(const string &tool, const double graspOr,const
         cmdSim.addInt(graspDisp);           // displacement
         cmdSim.addInt(tiltValid);           // tilt
         rpcSimToolLoader.write(cmdSim, replySim);
-        cout << "Sent RPC command to simtoolloader: " << cmdSim.toString() << "." <<endl;
+        yInfo() << "Sent RPC command to simtoolloader: " << cmdSim.toString() << ".";
 
         // check succesful tool creation
         if (replySim.size() <1){
-            cout << "simtoolloader couldn't load tool." << endl;
+            yError() << "simtoolloader couldn't load tool.";
             return false;
         }
 
-        cout << "Loading cloud model: " << tool  << " in O3DE." << endl;
+        yInfo() << "Loading cloud model: " << tool  << " in O3DE.";
 
         // Query toolFeatExt to load model to load 3D Pointcloud.
         if (!load3Dmodel(tool)){
-            cout << "Coudln't load the tool." << endl;
+            yError() << "Coudln't load the tool.";
             return false;
         }        
 
@@ -819,40 +820,40 @@ bool Tool3DManager::getToolSimExe(const string &tool, const double graspOr,const
         cmdSim.addDouble(graspDisp);           // displacement
         cmdSim.addDouble(tiltValid);           // tilt
         rpcSimToolLoader.write(cmdSim, replySim);
-        cout << "Sent RPC command to simtoolloader: " << cmdSim.toString() << "." <<endl;
+        yInfo() << "Sent RPC command to simtoolloader: " << cmdSim.toString() << ".";
 
         // check succesful tool reGrasping
         if (replySim.size() <1){
-            cout << "simtoolloader cloudln't load tool." << endl;
+            yError() << "simtoolloader cloudln't load tool.";
             return false;
         }
     }
 
     // Get the tooltip canonical coordinates wrt the hand coordinate frame from its bounding box.
-    cout << "Getting tooltip coordinates." << endl;
+    yInfo() << "Getting tooltip coordinates.";
     cmd3DE.clear();   reply3DE.clear();
     cmd3DE.addString("findTooltipParam");
     cmd3DE.addDouble(graspOr);
     cmd3DE.addDouble(graspDisp);
     cmd3DE.addDouble(tiltValid);
     rpc3Dexp.write(cmd3DE, reply3DE);
-    cout << "Sent RPC command to toolIncorporator: " << cmd3DE.toString() << "."<< endl;
+    yInfo() << "Sent RPC command to toolIncorporator: " << cmd3DE.toString() << ".";
     if (reply3DE.get(0).asString() != "[ack]" ){
-        cout << "toolIncorporator coudln't compute the tooltip." << endl;
+        yError() << "toolIncorporator coudln't compute the tooltip.";
         return false;
     }
-    cout << " Received reply: " << reply3DE.toString() << endl;
+    yInfo() << " Received reply: " << reply3DE.toString();
 
     Bottle tooltipBot = reply3DE.tail();
     tooltip.x = tooltipBot.get(0).asDouble();
     tooltip.y = tooltipBot.get(1).asDouble();
     tooltip.z = tooltipBot.get(2).asDouble();
 
-    cout << "Tooltip of tool in positon: x= " << tooltip.x << ", y = " << tooltip.y << ", z = " << tooltip.z <<endl;
+    yInfo() << "Tooltip of tool in positon: x= " << tooltip.x << ", y = " << tooltip.y << ", z = " << tooltip.z;
 
-    cout << endl << "Attaching tooltip." << endl;
+    yInfo() << "Attaching tooltip.";
     addToolTip(tooltip);
-    cout << "Tool loaded and tooltip attached" << endl;
+    yInfo() << "Tool loaded and tooltip attached";
 
     // Put action parameters on a port so they can be read
     graspVec.clear();		// Clear to make space for new coordinates
@@ -872,31 +873,31 @@ bool Tool3DManager::getToolParamExe(const string &tool, const double graspOr, co
     string tool_loaded;
     tool_loaded = graspToolExe(tool);
     if (tool_loaded == "not_loaded"){
-        cout << "iCub couldn't grasp the tool properly" << endl;
+        yError() << "iCub couldn't grasp the tool properly";
         return false;
     }
     int toolI = findToolInd(tool_loaded);
 
-    cout <<  "Tool  "<< tool_loaded << " grasped!" << endl;
+    yInfo() <<  "Tool  "<< tool_loaded << " grasped!";
 
     bool ok;
     // Query toolIncorporator to load model to load 3D Pointcloud.
-    cout << "Querying objectd3DExplorer to set tooltip based on the folllowing parameters." << endl;
-    cout << " -- orientation: "<< graspOr << endl << " -- displacement: " << graspDisp << endl << " -- tilt: " << graspTilt  <<endl << " -- shift: " << graspShift << endl;
+    yInfo() << "Querying objectd3DExplorer to set tooltip based on the folllowing parameters.";
+    yInfo() << " -- orientation: "<< graspOr << " -- displacement: " << graspDisp << " -- tilt: " << graspTilt  << " -- shift: " << graspShift;
     ok = findPoseParamExe(tooltip, graspOr, graspDisp, graspTilt, graspShift);
     if (!ok){
-        cout << "Tool Tip could not be computed from params." << endl;
+        yError() << "Tool Tip could not be computed from params.";
         return false;
     }
-    cout << "Tooltip of tool in positon: x= "<< tooltip.x << ", y = " << tooltip.y << ", z = " << tooltip.z <<endl;
+    yInfo() << "Tooltip of tool in positon: x= "<< tooltip.x << ", y = " << tooltip.y << ", z = " << tooltip.z;
 
-    cout << endl << "Attaching tooltip." << endl;
+    yInfo() << "Attaching tooltip.";
     ok = addToolTip(tooltip);
     if (!ok){
-        cout << "Tool tip could not be attached." << endl;
+        yError() << "Tool tip could not be attached.";
         return false;
     }
-    cout <<  "Tooltip attached, ready to perform action!" << endl;
+    yInfo() <<  "Tooltip attached, ready to perform action!";
 
 
     // Put action parameters on a port so they can be read
@@ -915,7 +916,7 @@ bool Tool3DManager::getToolAlignExe(const string& tool)
     string tool_loaded;
     tool_loaded = graspToolExe(tool);
     if (tool_loaded == "not_loaded"){
-        cout << "iCub couldn't grasp the tool properly" << endl;
+        yError() << "iCub couldn't grasp the tool properly";
         return false;
     }
     int toolI = findToolInd(tool_loaded);
@@ -924,18 +925,18 @@ bool Tool3DManager::getToolAlignExe(const string& tool)
     double ori, displ, tilt;
     ok = findPoseAlignExe(tooltip, ori, displ, tilt);
     if (!ok){
-        cout << "Tool Pose could not be estimated properly" << endl;
+        yError() << "Tool Pose could not be estimated properly";
         return false;
     }
-    cout <<  "Tool  grasped with orientation: " << ori <<", displ: " << displ << " and tilt " << tilt <<  endl;
-    cout <<  "Tooltip found at (" <<tooltip.x <<", " << tooltip.y << "," <<tooltip.z <<  ") !" << endl;
+    yInfo() <<  "Tool  grasped with orientation: " << ori <<", displ: " << displ << " and tilt " << tilt;
+    yInfo() <<  "Tooltip found at (" <<tooltip.x <<", " << tooltip.y << "," <<tooltip.z <<  ") !";
 
     ok =addToolTip(tooltip);
     if (!ok){
-        cout << "Tool tip could not be attached." << endl;
+        yError() << "Tool tip could not be attached.";
         return false;
     }
-    cout <<  "Tooltip attached, ready to perform action!" << endl;
+    yInfo() <<  "Tooltip attached, ready to perform action!";
 
     // Put action parameters on a port so they can be read
     graspVec.clear();		// Clear to make space for new coordinates
@@ -954,11 +955,11 @@ bool Tool3DManager::regraspExe(Point3D &newTip, const double graspOr, const doub
     {
 
     int toolI = findToolInd(toolname);
-    if (toolI < 0){     cout << "Tool label not found" << endl;        return false;}
-    cout << endl<< "Regrasping tool " << toolname << " with index " << toolI << endl;
+    if (toolI < 0){     yError() << "Tool label not found";        return false;}
+    yInfo()<< "Regrasping tool " << toolname << " with index " << toolI;
 
     // Query simtoolloader to rotate the virtual tool
-    cout << endl<< "with orientation: " << graspOr << ", disp " << graspDisp << ", Tilt " << graspTilt << " and shift " << graspShift << endl;
+    yInfo()<< "with orientation: " << graspOr << ", disp " << graspDisp << ", Tilt " << graspTilt << " and shift " << graspShift;
 
     // Call simtoolloader to create the tool
     if (robot == "icubSim"){
@@ -969,29 +970,29 @@ bool Tool3DManager::regraspExe(Point3D &newTip, const double graspOr, const doub
         cmdSim.addDouble(graspDisp);           // displacement
         cmdSim.addDouble(graspTilt);           // displacement
         rpcSimToolLoader.write(cmdSim, replySim);
-        cout << "Sent RPC command to simtoolloader: " << cmdSim.toString() << "." <<endl;
+        yInfo() << "Sent RPC command to simtoolloader: " << cmdSim.toString() << ".";
 
         // check succesful tool reGrasping
         if (replySim.size() <1){
-            cout << "simtoolloader clouldn't regrasp tool." << endl;
+            yError() << "simtoolloader clouldn't regrasp tool.";
             return false;
         }
-        //cout << "Received reply: " << replySim.toString() << endl;
+        //yInfo() << "Received reply: " << replySim.toString();
     }
 
     // Transform the tooltip from the canonical to the current grasp
     bool ok;
     ok = findPoseParamExe(newTip, graspOr, graspDisp, graspTilt, graspShift);
     if (!ok){
-        cout << "Tool tip could not be computed from params." << endl;
+        yError() << "Tool tip could not be computed from params.";
         return false;
     }
-    cout << "Tooltip of tool in positon: x= "<< newTip.x << ", y = " << newTip.y << ", z = " << newTip.z <<endl;
+    yInfo() << "Tooltip of tool in positon: x= "<< newTip.x << ", y = " << newTip.y << ", z = " << newTip.z;
 
-    cout << endl << "Attaching tooltip." << endl;
+    yInfo() << "Attaching tooltip.";
     ok = addToolTip(newTip);
     if (!ok){
-        cout << "Tool tip could not be attached." << endl;
+        yError() << "Tool tip could not be attached.";
         return false;
     }
     fprintf(stdout,"Tool loaded and tooltip attached \n");
@@ -1014,15 +1015,15 @@ bool Tool3DManager::findPoseAlignExe(Point3D &ttip, double &ori, double &displ, 
 {
     // Query toolIncorporator to find the tooltip
     Bottle cmd3DE,reply3DE;
-    cout << "Finding out Pose and tooltip by aligning 3D partial view with model." << endl;
+    yInfo() << "Finding out Pose and tooltip by aligning 3D partial view with model.";
     cmd3DE.clear();   reply3DE.clear();
     cmd3DE.addString("findTooltipAlign");
     cmd3DE.addInt(5);
-    cout << "Sending RPC command to toolIncorporator: " << cmd3DE.toString() << "."<< endl;
+    yInfo() << "Sending RPC command to toolIncorporator: " << cmd3DE.toString() << ".";
     rpc3Dexp.write(cmd3DE, reply3DE);
-    cout << "RPC reply from toolIncorporator: " << reply3DE.toString() << "."<< endl;
+    yInfo() << "RPC reply from toolIncorporator: " << reply3DE.toString() << ".";
     if (reply3DE.get(0).asString() == "[nack]" ){
-        cout << "toolIncorporator couldn't find out the pose." << endl;
+        yError() << "toolIncorporator couldn't find out the pose.";
         return false;
     }
 
@@ -1034,7 +1035,7 @@ bool Tool3DManager::findPoseAlignExe(Point3D &ttip, double &ori, double &displ, 
     displ = tooltipBot.get(4).asDouble();
     tilt = tooltipBot.get(5).asDouble();
 
-    cout <<  "Pose found relative to parameters:" <<endl << " orientation: " << ori <<", displ: " << displ << " and tilt " << tilt <<  endl;
+    yInfo() <<  "Pose found relative to parameters:" << " orientation: " << ori <<", displ: " << displ << " and tilt " << tilt;
 
     return true;
 }
@@ -1045,7 +1046,7 @@ bool Tool3DManager::findPoseAlignExe(Point3D &ttip, double &ori, double &displ, 
 bool Tool3DManager::findPoseParamExe(Point3D &ttip, const double graspOr, const double graspDisp, const double graspTilt, const double graspShift)
 {
     // Query toolIncorporator to find the tooltip
-    cout << "Finding out tooltoltip from model and grasp parameters." << endl;
+    yInfo() << "Finding out tooltoltip from model and grasp parameters.";
     Bottle cmd3DE, reply3DE;
 
     cmd3DE.clear();   reply3DE.clear();
@@ -1054,11 +1055,11 @@ bool Tool3DManager::findPoseParamExe(Point3D &ttip, const double graspOr, const 
     cmd3DE.addDouble(graspDisp);
     cmd3DE.addDouble(graspTilt);
     cmd3DE.addDouble(graspShift);
-    cout << "Sending RPC command to toolIncorporator: " << cmd3DE.toString() << "."<< endl;
+    yInfo() << "Sending RPC command to toolIncorporator: " << cmd3DE.toString() << ".";
     rpc3Dexp.write(cmd3DE, reply3DE);
-    cout << "RPC reply from toolIncorporator: " << reply3DE.toString() << "."<< endl;
+    yInfo() << "RPC reply from toolIncorporator: " << reply3DE.toString() << ".";
     if (reply3DE.get(0).asString() != "[ack]" ){
-        cout << "toolIncorporator couldn't estimate the tip." << endl;
+        yError() << "toolIncorporator couldn't estimate the tip.";
         return false;
     }
     Bottle ttBot = reply3DE.tail();
@@ -1075,18 +1076,18 @@ bool Tool3DManager::findPoseParamExe(Point3D &ttip, const double graspOr, const 
 bool Tool3DManager::exploreTool(const string &tool,const string &exp_mode, Point3D &ttip)
 {
     // Query toolIncorporator to find the tooltip
-    cout << "Finding out tooltoltip by exploration and symmetry" << endl;
+    yInfo() << "Finding out tooltoltip by exploration and symmetry";
     Bottle cmd3DE, reply3DE;
 
     cmd3DE.clear();   reply3DE.clear();
     cmd3DE.addString("exploreTool");
     cmd3DE.addString(tool);
     cmd3DE.addString(exp_mode);
-    cout << "Sending RPC command to toolIncorporator: " << cmd3DE.toString() << "."<< endl;
+    yInfo() << "Sending RPC command to toolIncorporator: " << cmd3DE.toString() << ".";
     rpc3Dexp.write(cmd3DE, reply3DE);
-    cout << "RPC reply from toolIncorporator: " << reply3DE.toString() << "."<< endl;
+    yInfo() << "RPC reply from toolIncorporator: " << reply3DE.toString() << ".";
     if (reply3DE.get(0).asString() != "[ack]" ){
-        cout << "There was some error exploring the tool." << endl;
+        yError() << "There was some error exploring the tool.";
         return false;
     }
 
@@ -1101,21 +1102,21 @@ bool Tool3DManager::exploreTool(const string &tool,const string &exp_mode, Point
 
         cmd3DE.clear();   reply3DE.clear();
         cmd3DE.addString("makecanon");
-        cout << "Sending RPC command to toolIncorporator: " << cmd3DE.toString() << "."<< endl;
+        yInfo() << "Sending RPC command to toolIncorporator: " << cmd3DE.toString() << ".";
         rpc3Dexp.write(cmd3DE, reply3DE);
-        cout << "RPC reply from toolIncorporator: " << reply3DE.toString() << "."<< endl;
+        yInfo() << "RPC reply from toolIncorporator: " << reply3DE.toString() << ".";
         if (reply3DE.get(0).asString() != "[ack]" ){
-            cout << "Main planes could not be computed." << endl;
+            yError() << "Main planes could not be computed.";
             return false;
         }
 
         cmd3DE.clear();   reply3DE.clear();
         cmd3DE.addString("findTooltipSym");
-        cout << "Sending RPC command to toolIncorporator: " << cmd3DE.toString() << "."<< endl;
+        yInfo() << "Sending RPC command to toolIncorporator: " << cmd3DE.toString() << ".";
         rpc3Dexp.write(cmd3DE, reply3DE);
-        cout << "RPC reply from toolIncorporator: " << reply3DE.toString() << "."<< endl;
+        yInfo() << "RPC reply from toolIncorporator: " << reply3DE.toString() << ".";
         if (reply3DE.get(0).asString() != "[ack]" ){
-            cout << "There was some estimating the tooltip." << endl;
+            yError() << "There was some estimating the tooltip.";
             return false;
         }
 
@@ -1149,7 +1150,7 @@ double Tool3DManager::findOri()
     cmd3DE.addString("getOri");
     rpc3Dexp.write(cmd3DE, reply3DE);
     if (reply3DE.get(0).asString() != "[ack]" ){
-        cout << "toolIncorporator coudln't return tool's orientation." << endl;
+        yError() << "toolIncorporator coudln't return tool's orientation.";
         return false;
     }
     double ori = reply3DE.get(0).asDouble();
@@ -1170,11 +1171,11 @@ bool Tool3DManager::addToolTip(const Point3D ttip)
     cmdAMM.addDouble(ttip.x);
     cmdAMM.addDouble(ttip.y);
     cmdAMM.addDouble(ttip.z);
-    cout << "RPC command to affMotor: " << cmdAMM.toString() << endl;
+    yInfo() << "RPC command to affMotor: " << cmdAMM.toString();
     rpcAffMotor.write(cmdAMM, replyAMM);
-    cout << "RPC reply from affMotor: " << replyAMM.toString() << endl;
+    yInfo() << "RPC reply from affMotor: " << replyAMM.toString();
     if (!(replyAMM.toString() == "[ack]")){
-        cout <<  "Affordance Motor Module could not add the tooltip " << endl;
+        yError() <<  "Affordance Motor Module could not add the tooltip ";
         return false;
     }
 
@@ -1184,27 +1185,27 @@ bool Tool3DManager::addToolTip(const Point3D ttip)
 /**********************************************************/
 bool Tool3DManager::extractFeats()
 {    // Query toolFeatExt to extract features
-    cout << "Extacting features of handled tool." << endl;
+    yInfo() << "Extacting features of handled tool.";
     Bottle cmd3DE,reply3DE;                 // bottles for toolIncorporator
 
     cmd3DE.clear();   reply3DE.clear();
     cmd3DE.addString("extractFeats");
-    cout << "Sending RPC command to toolIncorporator: " << cmd3DE.toString() << "."<< endl;
+    yInfo() << "Sending RPC command to toolIncorporator: " << cmd3DE.toString() << ".";
     rpc3Dexp.write(cmd3DE, reply3DE);
-    cout << "RPC reply from toolIncorporator: " << reply3DE.toString() << "."<< endl;
+    yInfo() << "RPC reply from toolIncorporator: " << reply3DE.toString() << ".";
 
     return true;
 }
 
 bool Tool3DManager::trainGraspClas(const std::string &label)
 {
-    cout << " Sending 'observe' command to ARE " << endl;
+    yInfo() << " Sending 'observe' command to ARE ";
     Bottle cmdARE, replyARE;
     cmdARE.clear();	replyARE.clear();
     cmdARE.addString("observe");
     rpcAreCmd.write(cmdARE,replyARE);
 
-    cout << " Getting hand reference frame from ARE get." << endl;
+    yInfo() << " Getting hand reference frame from ARE get.";
 
     Bottle cmdAREget, replyAREget;
     cmdAREget.clear();	replyAREget.clear();
@@ -1213,12 +1214,12 @@ bool Tool3DManager::trainGraspClas(const std::string &label)
     cmdAREget.addString("image");
     rpcAreGet.write(cmdAREget,replyAREget);
 
-    cout << " ARE replied: " << replyAREget.toString() << endl;
+    yInfo() << " ARE replied: " << replyAREget.toString();
 
     int hand_u_left = replyAREget.get(0).asInt();
     int hand_v_left = replyAREget.get(1).asInt();
 
-    cout << " Hand ref frame at : " << hand_u_left << ", " << hand_v_left << endl;
+    yInfo() << " Hand ref frame at : " << hand_u_left << ", " << hand_v_left;
 
     //int hand_u_left = replyAREget.get(0).asList()->get(0).asInt();
     //int hand_v_left = replyAREget.get(0).asList()->get(1).asInt();
@@ -1234,7 +1235,7 @@ bool Tool3DManager::trainGraspClas(const std::string &label)
     BB[3] = hand_v_left + bbsize/2;         // bry
     if (BB[3]> imgH){        BB[3]= imgH;    }
 
-    cout << " Bounding Box is: " << BB[0] <<", " << BB[1] <<", " << BB[2] <<", " << BB[3] << endl;
+    yInfo() << " Bounding Box is: " << BB[0] <<", " << BB[1] <<", " << BB[2] <<", " << BB[3];
 
 
     Bottle cmdClas, replyClas;
@@ -1247,20 +1248,20 @@ bool Tool3DManager::trainGraspClas(const std::string &label)
     cmdClas.addInt(BB[3]);
     rpcGraspClass.write(cmdClas,replyClas);
 
-    cout << " Classifier trained with label " << label << endl;
+    yInfo() << " Classifier trained with label " << label;
 
     return true;
 }
 
 bool Tool3DManager::classify()
 {
-    cout << " Sending 'observe' command to ARE " << endl;
+    yInfo() << " Sending 'observe' command to ARE ";
     Bottle cmdARE, replyARE;
     cmdARE.clear();	replyARE.clear();
     cmdARE.addString("observe");
     rpcAreCmd.write(cmdARE,replyARE);
 
-    cout << " Getting hand reference frame from ARE get." << endl;
+    yInfo() << " Getting hand reference frame from ARE get.";
 
     Bottle cmdAREget, replyAREget;
     cmdAREget.clear();	replyAREget.clear();
@@ -1269,12 +1270,12 @@ bool Tool3DManager::classify()
     cmdAREget.addString("image");
     rpcAreGet.write(cmdAREget,replyAREget);
 
-    cout << " ARE replied: " << replyAREget.toString() << endl;
+    yInfo() << " ARE replied: " << replyAREget.toString();
 
     int hand_u_left = replyAREget.get(0).asInt();
     int hand_v_left = replyAREget.get(1).asInt();
 
-    cout << " Hand ref frame at : " << hand_u_left << ", " << hand_v_left << endl;
+    yInfo() << " Hand ref frame at : " << hand_u_left << ", " << hand_v_left;
 
     //int hand_u_left = replyAREget.get(0).asList()->get(0).asInt();
     //int hand_v_left = replyAREget.get(0).asList()->get(1).asInt();
@@ -1289,7 +1290,7 @@ bool Tool3DManager::classify()
     BB[3] = hand_v_left + bbsize/2;         // bry
     if (BB[3]> imgH){        BB[3]= imgH;    }
 
-    cout << " Bounding Box is: " << BB[0] <<", " << BB[1] <<", " << BB[2] <<", " << BB[3] << endl;
+    yInfo() << " Bounding Box is: " << BB[0] <<", " << BB[1] <<", " << BB[2] <<", " << BB[3];
 
     Bottle cmdClas, replyClas;
     cmdClas.clear();	replyClas.clear();
@@ -1300,7 +1301,7 @@ bool Tool3DManager::classify()
     cmdClas.addInt(BB[3]);
     rpcGraspClass.write(cmdClas,replyClas);
 
-    cout << " Classifier replied: " << replyClas.toString() << endl;
+    yInfo() << " Classifier replied: " << replyClas.toString();
 
     bool answer;
     if (strcmp (replyClas.toString().c_str(),"[ok]") == 0)
@@ -1324,7 +1325,7 @@ double Tool3DManager::findTableHeight(bool calib){
 
     Bottle cmdARE, replyARE;
     if (calib){
-        cout << "Asking ARE to calibrate on table: " << hand <<endl;
+        yInfo() << "Asking ARE to calibrate on table: " << hand;
 
         cmdARE.clear();    replyARE.clear();
         cmdARE.addString("calib");
@@ -1333,7 +1334,7 @@ double Tool3DManager::findTableHeight(bool calib){
         rpcAreCmd.write(cmdARE,replyARE);
     }
 
-    cout << "Retrieving table height data from ARE " << hand <<endl;
+    yInfo() << "Retrieving table height data from ARE " << hand;
     cmdARE.clear();     replyARE.clear();
     cmdARE.addString("get");
     cmdARE.addString("table");
@@ -1341,7 +1342,7 @@ double Tool3DManager::findTableHeight(bool calib){
 
     double th = replyARE.get(0).asList()->get(1).asDouble();
 
-    cout << "Table height is " << th <<endl;
+    yInfo() << "Table height is " << th;
 
     return th;
 }
@@ -1380,7 +1381,7 @@ bool Tool3DManager::getObjLoc(Vector &coords3D)
 {
     if (robot=="icubSim"){
         Bottle cmdSim,replySim;
-        cout << endl <<"Getting 3D coords of object." <<endl;
+        yInfo() <<"Getting 3D coords of object.";
         cmdSim.clear();        replySim.clear();
         cmdSim.addString("world");
         cmdSim.addString("get");
@@ -1406,7 +1407,7 @@ bool Tool3DManager::getObjLoc(Vector &coords3D)
 
             return true;
         }
-        cout << "No 3D point received" << endl;
+        yInfo() << "No 3D point received";
         return false;
 
     }else{
@@ -1414,11 +1415,11 @@ bool Tool3DManager::getObjLoc(Vector &coords3D)
         // Get the 2D coordinates of the object from objectFinder
         Bottle *trackCoords = trackPort.read(true);
         if (trackCoords->size() <1){
-            cout << "No 2D point received" << endl;
+            yError() << "No 2D point received";
             return false;
         }
 
-        cout << " Read from tracker: " << trackCoords->toString() << endl;
+        yInfo() << " Read from tracker: " << trackCoords->toString();
         double tlx = trackCoords->get(0).asList()->get(0).asDouble();
         double tly = trackCoords->get(0).asList()->get(1).asDouble();
         double brx = trackCoords->get(0).asList()->get(2).asDouble();
@@ -1428,7 +1429,7 @@ bool Tool3DManager::getObjLoc(Vector &coords3D)
         coords2D(0) = (tlx + brx)/2;
         coords2D(1) = (tly + bry)/2;
 
-        cout << "Object tracked at 2D coordinates (" << coords2D[0] << ", " << coords2D[1] << ")" << endl;
+        yInfo() << "Object tracked at 2D coordinates (" << coords2D[0] << ", " << coords2D[1] << ")";
 
         // XXX change this to call to IOLreaching calibration to get a relaible 3D point for object
         coords3D.resize(3);
@@ -1449,7 +1450,7 @@ bool Tool3DManager::getObjLoc(Vector &coords3D)
 
             return true;
         }
-        cout << "No 3D point received" << endl;
+        yInfo() << "No 3D point received";
         return false;
     }
 }
@@ -1476,7 +1477,7 @@ bool Tool3DManager::getObjRot(Vector &rot3D)
             printf("Rotation in 3D retrieved: %g, %g %g\n", rot3D(0), rot3D(1), rot3D(2));
             return true;
         }
-        cout << "No 3D point received" << endl;
+        yError() << "No 3D point received";
         return false;
 
     }else{
@@ -1489,7 +1490,7 @@ bool Tool3DManager::getObjRot(Vector &rot3D)
 /**********************************************************/
 bool Tool3DManager::computeEffect()
 {
-    cout << endl << "Computing effect from action."  << endl;
+    yInfo() << "Computing effect from action." ;
 
     effectVec.clear();		// Clear to make space for new coordinates
     effectVec.resize(3);    // Resize to 3D coordinates
@@ -1501,10 +1502,10 @@ bool Tool3DManager::computeEffect()
     target3DrotAfter.resize(3);
     if(!getObjLoc(target3DcoordsAfter))     // Get the location of the object after the action
     {
-        cout << " Object not located, cant observe effect"<< endl;
+        yError() << " Object not located, cant observe effect";
         return false;
     }
-    cout << "Coords after action: (" << target3DcoordsAfter[0] << ", " << target3DcoordsAfter[1] << ", "<< target3DcoordsAfter[2] << "). " <<endl;
+    yInfo() << "Coords after action: (" << target3DcoordsAfter[0] << ", " << target3DcoordsAfter[1] << ", "<< target3DcoordsAfter[2] << "). ";
 
     //To compute the displacement, we assume that the object hasnt move in the z axis (that is, has remained on the table)
     Vector displ = target3DcoordsAfter - target3DcoordsIni;
@@ -1521,10 +1522,10 @@ bool Tool3DManager::computeEffect()
     if (robot=="icubSim"){
         if(!getObjRot(target3DrotAfter))        // Get the rotation of the object after the action
         {
-            cout << " Object rotation not available, cant compute effect"<< endl;
+            yError() << " Object rotation not available, cant compute effect";
             return false;
         }
-        cout << "Rotation after action: (" << target3DrotAfter[0] << ", " << target3DrotAfter[2] << ", "<< target3DrotAfter[2] << "). " <<endl;
+        yInfo() << "Rotation after action: (" << target3DrotAfter[0] << ", " << target3DrotAfter[2] << ", "<< target3DrotAfter[2] << "). ";
 
         //To compute the rotation, we assume that the object has only rotated around axis Y (that is, has not been tipped)
         Vector rot = target3DrotAfter - target3DrotIni;
@@ -1534,7 +1535,7 @@ bool Tool3DManager::computeEffect()
         effectVec[2] = 0.0;
     }
 
-    cout << "Object displaced " << effectVec[0] << " meters on " << effectVec[1] << " direction, and rotated " << effectVec[2] << " degrees."<< endl;
+    yInfo() << "Object displaced " << effectVec[0] << " meters on " << effectVec[1] << " direction, and rotated " << effectVec[2] << " degrees.";
 
     // Prepare the affordance out bottle
     aff_out_data.clear();
@@ -1567,21 +1568,21 @@ bool Tool3DManager::resetCube()
         cmdSim.addString("move");
         cmdSim.addInt(0);                   // object -> Cube
         rpcSimToolLoader.write(cmdSim, replySim); // Call simtoolloader to create the tool
-        //cout << "Sent RPC command to simtoolloader: " << cmdSim.toString() << "." <<endl;
-        //cout << " Received reply: " << replySim.toString() << endl;
+        //yInfo() << "Sent RPC command to simtoolloader: " << cmdSim.toString() << ".";
+        //yInfo() << " Received reply: " << replySim.toString();
         Time::delay(0.3); // give time for the cube to reach its position before jumping to next step
     } else {
-        cout << '\n' << endl;
-        cout << "Effect computed, 5 seconds to put the object back in place" <<endl;
-        cout << "5" <<endl;
+        yInfo() << '\n';
+        yInfo() << "Effect computed, 5 seconds to put the object back in place";
+        yInfo() << "5";
         Time::delay(1);
-        cout << "4" <<endl;
+        yInfo() << "4";
         Time::delay(1);
-        cout << "3" <<endl;
+        yInfo() << "3";
         Time::delay(1);
-        cout << "2" <<endl;
+        yInfo() << "2";
         Time::delay(1);
-        cout << "1" <<endl;
+        yInfo() << "1";
         Time::delay(1);
     }
     return true;
@@ -1605,7 +1606,7 @@ bool Tool3DManager::sendAffData()
 /**********************************************************/
 void Tool3DManager::goHomeExe(const bool hands)
 {
-    cout << endl << "Going home, hands: " << hands <<endl;
+    yInfo() << "Going home, hands: " << hands;
 
     if (robot == "icubSim"){
         Bottle cmd3DE,reply3DE;                 // bottles for O3DE
@@ -1616,7 +1617,7 @@ void Tool3DManager::goHomeExe(const bool hands)
 
         Bottle cmdAMM, replyAMM;
         // Move hand to center to receive tool on correct position - implemented by faking a push action to the center to avoid iCart dependencies.
-        cout << "Moving "<< hand << " arm to a central position" << endl;
+        yInfo() << "Moving "<< hand << " arm to a central position";
         double dispY = (hand=="right")?0.20:-0.20;
         cmdAMM.clear();replyAMM.clear();
         cmdAMM.addString("push");            // Set a position in the center in front of the robot
@@ -1657,7 +1658,7 @@ bool Tool3DManager::slideExe(const double theta, const double radius)
     actVec.clear();		// Clear to make space for new coordinates
     actVec.resize(2);   // Resize to save theta - radius coordinates coordinates
 
-    cout << endl<< "Performing slide action from angle " << theta <<" and radius "<< radius  << endl;
+    yInfo()<< "Performing slide action from angle " << theta <<" and radius "<< radius ;
     target3DcoordsIni.clear();		// Clear to make space for new coordinates
     target3DcoordsIni.resize(3);    // Resizze to 3D coordinates
     target3DrotIni.clear();         // Clear to make space for new rotation values
@@ -1666,7 +1667,7 @@ bool Tool3DManager::slideExe(const double theta, const double radius)
     // Locate object and perform slide action with given theta and aradius parameters
     if (!getObjLoc(target3DcoordsIni))
     {
-        cout << " Object not located, cant perform action"<< endl;
+        yError() << " Object not located, cant perform action";
         return false;
     }
     getObjRot(target3DrotIni);               // Get the initial rotation of the object
@@ -1678,7 +1679,7 @@ bool Tool3DManager::slideExe(const double theta, const double radius)
     tooltip.x = 0.0;    tooltip.y = 0.0;  tooltip.z = 0.0;
 
 
-    cout << "Approaching to coords: (" << target3DcoordsIni[0] << ", " << target3DcoordsIni[2] << ", "<< target3DcoordsIni[2] << "). " <<endl;
+    yInfo() << "Approaching to coords: (" << target3DcoordsIni[0] << ", " << target3DcoordsIni[2] << ", "<< target3DcoordsIni[2] << "). ";
     Bottle cmdAMM,replyAMM;                    // bottles for the Affordance Motor Module
     cmdAMM.clear();replyAMM.clear();
     cmdAMM.addString("slide");                 // Set a position in the center in front of the robot
@@ -1716,7 +1717,7 @@ bool Tool3DManager::dragExe(const double theta, const double radius, const doubl
     actVec.clear();		// Clear to make space for new coordinates
     actVec.resize(2);   // Resize to save theta - radius coordinates coordinates
 
-    cout << endl<< "Performing drag action from angle " << theta <<" and radius "<< radius  << endl;
+    yInfo()<< "Performing drag action from angle " << theta <<" and radius "<< radius ;
     target3DcoordsIni.clear();		// Clear to make space for new coordinates
     target3DcoordsIni.resize(3);    // Resizze to 3D coordinates
     target3DrotIni.clear();         // Clear to make space for new rotation values
@@ -1727,7 +1728,7 @@ bool Tool3DManager::dragExe(const double theta, const double radius, const doubl
     // Locate object and perform slide action with given theta and aradius parameters
     if (!getObjLoc(target3DcoordsIni))
     {
-        cout << " Object not located, cant perform action"<< endl;
+        yError() << " Object not located, cant perform action";
         return false;
     }
     getObjRot(target3DrotIni);               // Get the initial rotation of the object
@@ -1736,7 +1737,7 @@ bool Tool3DManager::dragExe(const double theta, const double radius, const doubl
         bool coordOK = checkSaveDrag(target3DcoordsIni, theta, radius);       // check if the desired drag is save (heurisitcs).
 
         if (!coordOK){
-            cout << "Object coordenated out of save reach" << endl;
+            yError() << "Object coordenated out of save reach";
             return false;
         }
     }
@@ -1744,7 +1745,7 @@ bool Tool3DManager::dragExe(const double theta, const double radius, const doubl
     // Action during the Affordance Motor Module execution transforms the end-effector from the hand to the tip pf the tool,
     // so the representation has to be inverted so it still shows the right tooltip while performing the action
     // and restored afterwards so it shows it also during not execution.
-    cout << "Deactivating Tootip projection: " << endl; 
+    yInfo() << "Deactivating Tootip projection: "; 
 
     cmd3DE.clear();   reply3DE.clear();
     cmd3DE.addString("showTipProj");
@@ -1764,7 +1765,7 @@ bool Tool3DManager::dragExe(const double theta, const double radius, const doubl
     }
 
     // Perform drag action
-    cout << "Approaching to object on coords: (" << target3DcoordsIni[0] << ", " << target3DcoordsIni[1] << ", "<< target3DcoordsIni[2] << "). " <<endl;
+    yInfo() << "Approaching to object on coords: (" << target3DcoordsIni[0] << ", " << target3DcoordsIni[1] << ", "<< target3DcoordsIni[2] << "). ";
 
     // Calculate approach shift depending on side it is approaching from:
     double toolOri = graspVec[1];
@@ -1782,7 +1783,7 @@ bool Tool3DManager::dragExe(const double theta, const double radius, const doubl
     rpcAffMotor.write(cmdAMM, replyAMM);
 
     // Restore show tool coordinates
-    cout << "Reactivating Tootip projection: " << endl;
+    yInfo() << "Reactivating Tootip projection: ";
     cmd3DE.clear();   reply3DE.clear();
     cmd3DE.addString("showTipProj");
     cmd3DE.addString("ON");
@@ -1802,7 +1803,7 @@ bool Tool3DManager::dragExe(const double theta, const double radius, const doubl
 /**********************************************************/
 bool Tool3DManager::drag3DExe(double x, double y, double z, double theta, double radius, double tilt, bool useTool)
 {
-    cout << endl<< "Performing drag3D action from angle " << theta <<" and radius "<< radius  <<", tilt:"<< tilt <<endl;
+    yInfo()<< "Performing drag3D action from angle " << theta <<" and radius "<< radius  <<", tilt:"<< tilt;
     Bottle cmdAMM,replyAMM;                    // bottles for the Affordance Motor Module
     Bottle cmdARE,replyARE;
 
@@ -1822,14 +1823,14 @@ bool Tool3DManager::drag3DExe(double x, double y, double z, double theta, double
     //Point3D tooltip_tmp = tooltip;
     //tooltip.x = 0.0;    tooltip.y = 0.0;  tooltip.z = 0.0;
 
-    cout << "Deactivating Tootip projection: " << endl; 
+    yInfo() << "Deactivating Tootip projection: "; 
     Bottle cmd3DE,reply3DE;                 // bottles for O3DE
     cmd3DE.clear();   reply3DE.clear();
     cmd3DE.addString("showTipProj");
     cmd3DE.addString("OFF");
     rpc3Dexp.write(cmd3DE, reply3DE);
 
-    cout << "Approaching to object on coords: (" << x << ", " << y << ", "<< z << "). " <<endl;
+    yInfo() << "Approaching to object on coords: (" << x << ", " << y << ", "<< z << "). ";
 
     // Close hand on tool grasp
     if (robot != "icubSim"){
@@ -1863,7 +1864,7 @@ bool Tool3DManager::drag3DExe(double x, double y, double z, double theta, double
     }
 
     // Restore show tool coordinates
-    cout << "Reactivating Tootip projection: " << endl;
+    yInfo() << "Reactivating Tootip projection: ";
     cmd3DE.clear();   reply3DE.clear();
     cmd3DE.addString("showTipProj");
     cmd3DE.addString("ON");
@@ -1880,7 +1881,7 @@ bool Tool3DManager::drag3DExe(double x, double y, double z, double theta, double
         cmdAMM.addDouble(tooltip.z);
         rpcAffMotor.write(cmdAMM, replyAMM);
         if (!(replyAMM.toString() == "[ack]")){
-            cout <<  "Aff Motor Module could not re-attach the tooltip " << endl;
+            yError() <<  "Aff Motor Module could not re-attach the tooltip ";
             return false;
         }
     }
