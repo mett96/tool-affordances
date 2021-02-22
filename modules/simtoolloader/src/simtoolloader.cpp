@@ -185,12 +185,12 @@ bool CtrlThread::threadInit() {
     simCmd.addString("set");
     simCmd.addString("mdir");
 
-    //const ConstString icubRootEnvPath = yarp::os::getenv("ICUB_ROOT");
-    //const ConstString localModelsPath = "/contrib/src/poeticon/poeticonpp/simtoolloader/models";
+    //const string icubRootEnvPath = getenv("ICUB_ROOT");
+    //const string localModelsPath = "/contrib/src/poeticon/poeticonpp/simtoolloader/models";
     
-    const ConstString icubContribEnvPath = yarp::os::getenv("ICUBcontrib_DIR");
-    const ConstString localModelsPath    = "/share/ICUBcontrib/contexts/simtoolloader/models";
-    const ConstString modelsPath         = icubContribEnvPath + localModelsPath;
+    const string icubContribEnvPath = std::getenv("ICUBcontrib_DIR");
+    const string localModelsPath    = "/share/ICUBcontrib/contexts/simtoolloader/models";
+    const string modelsPath         = icubContribEnvPath + localModelsPath;
     simCmd.addString(modelsPath);
     writeSim(simCmd);
 
@@ -237,7 +237,7 @@ void CtrlThread::run() {
         cout << (controlCmd.get(0)).asString() << endl;
 
         switch(code) {
-            case VOCAB3('d','e','l'):
+            case createVocab('d','e','l'):
             {
                 cout << "Clear world" <<endl;
 
@@ -252,7 +252,7 @@ void CtrlThread::run() {
             }
             break;
 
-            case VOCAB3('o','b','j'):
+            case createVocab('o','b','j'):
             {
                 cout << "Create table and object (on the table)." <<endl;
 
@@ -291,7 +291,7 @@ void CtrlThread::run() {
             break;
 
 
-            case VOCAB4('m','o','v','e'):
+            case createVocab('m','o','v','e'):
             {
                 cout << "Move object to original position on table." <<endl;
                 objIndex = controlCmd.get(1).asInt();
@@ -331,7 +331,7 @@ void CtrlThread::run() {
             break;
 
 
-            case VOCAB4('t','o','o','l'):
+            case createVocab('t','o','o','l'):
             {
                 cout << "Create the tool in the hand, the objects on the table." <<endl;
 
@@ -492,7 +492,7 @@ void CtrlThread::run() {
             }
             break;
 
-            case VOCAB3('r','o','t'):
+            case createVocab('r','o','t'):
             {
                 cout << "Rotate the tool in the hand." <<endl;
 
@@ -617,7 +617,7 @@ void CtrlThread::run() {
             break;
 
 
-            case VOCAB4('h','e','l','p'):
+            case createVocab('h','e','l','p'):
             {
                 printf("Help request received. \n ");
                 controlCmd.clear();
@@ -718,7 +718,7 @@ SimWorld::SimWorld(const Bottle& threadTable,
                                       threadObject[n].get(3).asDouble());
         }
         else if (threadObject[n].get(1).asString() == "Model") {
-            //SimModel::SimModel(double posx, double posy, double posz, double rotx, double roty, double rotz, ConstString mes, ConstString tex)
+            //SimModel::SimModel(double posx, double posy, double posz, double rotx, double roty, double rotz, string mes, string tex)
             simObject[n] = new SimModel(threadTable.get(4).asDouble()-0.05,                                     // posx
                                         threadTable.get(5).asDouble()+((threadTable.get(2).asDouble())/2)+0.1,  // posy
                                         threadTable.get(6).asDouble()-0.01,                                     // posz
@@ -777,7 +777,7 @@ void SimObject::setObjectColor(double red,  double green, double blue) {
 /****************************** Model Class *******************************/
 SimModel::SimModel(double posx, double posy, double posz,
                    double rotx, double roty, double rotz,
-                   ConstString mes, ConstString tex) {
+                   string mes, string tex) {
     // cout << endl <<  "Creating model: "<< endl;
     // cout << "posx " << posx << ". posy " << posy << ". posz " << posz << endl;
     // cout << "rotx " << rotx << ". roty " << roty << ". rotz " << rotz << endl;

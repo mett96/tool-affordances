@@ -158,13 +158,13 @@ public:
 
 class SimModel: public SimObject {
 private:
-    ConstString mesh;
-    ConstString texture;
+    string mesh;
+    string texture;
 
 public:
     SimModel(double posx, double posy, double posz,
              double rotx, double roty, double rotz,
-             ConstString mes, ConstString tex);
+             string mes, string tex);
     virtual Bottle   makeObjectBottle(vector<int>& ind, bool collision = false);
     virtual Bottle   deleteObject();
     virtual Bottle   rotateObjectBottle();
